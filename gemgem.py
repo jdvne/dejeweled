@@ -12,7 +12,7 @@ with the following keys:
   'direction' - one of the four constant variables UP, DOWN, LEFT, RIGHT.
                 This is the direction the gem is moving.
   'imageNum'  - The integer index into GEMIMAGES to denote which image
-                this gem uses.
+                this gem uses. 
 """
 
 import random, time, pygame, sys, copy
@@ -59,7 +59,7 @@ YMARGIN = int((WINDOWHEIGHT - GEMIMAGESIZE * BOARDHEIGHT) / 2)
 
 # constants for direction values
 UP = 'up'
-DOWN = 'down'
+DOWN = 'down' 
 LEFT = 'left'
 RIGHT = 'right'
 
