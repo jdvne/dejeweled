@@ -125,32 +125,34 @@ def runGame():
 
     while True: # main game loop
         clickedSpace = None
-        for event in pygame.event.get(): # event handling loop
-            if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            elif event.type == KEYUP and event.key == K_BACKSPACE:
-                return # start a new game
 
-            elif event.type == MOUSEBUTTONUP:
-                if gameIsOver:
-                    return # after games ends, click to start a new game
+        # DONT NEED USER INPUT
+        # for event in pygame.event.get(): # event handling loop
+        #     if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
+        #         pygame.quit()
+        #         sys.exit()
+        #     elif event.type == KEYUP and event.key == K_BACKSPACE:
+        #         return # start a new game
 
-                if event.pos == (lastMouseDownX, lastMouseDownY):
-                    # This event is a mouse click, not the end of a mouse drag.
-                    clickedSpace = checkForGemClick(event.pos)
-                else:
-                    # this is the end of a mouse drag
-                    firstSelectedGem = checkForGemClick((lastMouseDownX, lastMouseDownY))
-                    clickedSpace = checkForGemClick(event.pos)
-                    if not firstSelectedGem or not clickedSpace:
-                        # if not part of a valid drag, deselect both
-                        firstSelectedGem = None
-                        clickedSpace = None
-            elif event.type == MOUSEBUTTONDOWN:
-                # this is the start of a mouse click or mouse drag
-                lastMouseDownX, lastMouseDownY = event.pos
+        #     elif event.type == MOUSEBUTTONUP:
+        #         if gameIsOver:
+        #             return # after games ends, click to start a new game
 
+        #         if event.pos == (lastMouseDownX, lastMouseDownY):
+        #             # This event is a mouse click, not the end of a mouse drag.
+        #             clickedSpace = checkForGemClick(event.pos)
+        #         else:
+        #             # this is the end of a mouse drag
+        #             firstSelectedGem = checkForGemClick((lastMouseDownX, lastMouseDownY))
+        #             clickedSpace = checkForGemClick(event.pos)
+        #             if not firstSelectedGem or not clickedSpace:
+        #                 # if not part of a valid drag, deselect both
+        #                 firstSelectedGem = None
+        #                 clickedSpace = None
+        #     elif event.type == MOUSEBUTTONDOWN:
+        #         # this is the start of a mouse click or mouse drag
+        #         lastMouseDownX, lastMouseDownY = event.pos
+        
         if clickedSpace and not firstSelectedGem:
             # This was the first gem clicked on.
             firstSelectedGem = clickedSpace
