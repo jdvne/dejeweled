@@ -1,28 +1,101 @@
 import gemgem
 import copy
-
-# this is the gem format for falling gems -> {'imageNum': 3, 'x': 3, 'y': 0, 'direction': 'down'}
+import random
 
 
 class Node:
-    def __init__(self, board, currentScore):
+    def __init__(self, board, currentScore,hasRandomGems):
         self.board = board
         self.score = currentScore
+        self.hasRandomGems = hasRandomGems
 
     def getSuccessors(self):
-        moves = getValidMoves(self.board)
+        '''
+        Return all possible board states
+        [(Node,firstSwappingGem,secondSwappingGem)]
+        '''
+
+        moves = gemgem.getValidMoves(self.board)
         successors = []
         # execute each move on a new board
-        for firstXY,secondXY in moves: # TODO CHANGE HOW THIS WORKS BECASUE WE ARENT USING COORDINATE PAIRS ANYMORE
-            tempBoard = copy.deepcopy(self.board)
-            # TODO make gemgem actually consider our AI's moves instead of user input
-            gemgem.getSwappingGems(tempBoard,firstXY,secondXY)
-            successors.append(tempBoard)
+        for move in moves:
+            firstSwappingGem, secondSwappingGem = move
+            
+            successorNode = Node(copy.deepcopy(self.board),self.score,True)
+
+             # Swap the gems in the board data structure.
+            successorNode.board[firstSwappingGem['x']][firstSwappingGem['y']] = secondSwappingGem['imageNum']
+            successorNode.board[secondSwappingGem['x']][secondSwappingGem['y']] = firstSwappingGem['imageNum']
+
+            # See if this is a matching move.
+            matchedGems = gemgem.findMatchingGems(successorNode.board)
+
+            # This was a matching move.
+            scoreAdd = 0
+            while matchedGems != []:
+                # Remove matched gems, then pull down the board.
+
+                # where on the screen to display text to show how many
+                # points the player got. points is a list because if
+                # the playergets multiple matches, then multiple points text should appear.
+                points = []
+                for gemSet in matchedGems:
+                    scoreAdd += (10 + (len(gemSet) - 3) * 10)
+                    for gem in gemSet:
+                        successorNode.board[gem[0]][gem[1]] = gemgem.EMPTY_SPACE
+                    points.append({'points': scoreAdd,
+                                    'x': gem[0] * gemgem.GEMIMAGESIZE + gemgem.XMARGIN,
+                                    'y': gem[1] * gemgem.GEMIMAGESIZE + gemgem.YMARGIN})
+                score += scoreAdd
+
+                # Refill the board with new gems
+                successorNode.board = gemgem.fillBoard(successorNode.board)
+
+                # Check if there are any new matches.
+                matchedGems = gemgem.findMatchingGems(successorNode.board)
+
+            successorNode.score = utilityForSuccessors(successorNode,self)
+            successors.append((successorNode,firstSwappingGem,secondSwappingGem)) 
 
         return successors
 
-    def expectiMax(self):
-        pass
+# def value(state):
+#     # Check if it is a terminal state
+#     if not gemgem.canMakeMove(state.board):
+#         return utility(state)
+        
+    # If next agent is Exp
+
+# We will start it off by calling maxValue in gemgem
+# maxValue is at most called one time on the original start node because all successor states have some randomness
+# maxValue will call expValue on its successors and opperate normally with that minor tweak
+# As a result of this we no longer need the value function
+# In the expValue function we will not call the value function because it is guarenteed that the next state will have random values and we just need to call expValue
+
+def maxValue(state):
+    pass
+
+def expValue(state):
+    pass
+
+def utilityForSuccessors(successorState,currentState):
+    '''
+    Return a numerical value of a state relative to its successor state
+    '''
+    #state is a successor
+    #lower down = higher utility
+    #doesn't end game = very important
+    #new moves >= moves before is very good
+    #long chain
+    utility = 0
+    if(getValidMoves(currentState) == None):
+        return -1000
+    if(getValidMoves(successorState.board).length >= getValidMoves(currentState.board).length):
+        utility += 1
+    if(successorState.getValidMoves().length == 0):
+        utility -= 1
+
+    return utility
 
 
 def getValidMoves(board):
@@ -109,3 +182,30 @@ def getValidMoves(board):
                     moves.add([g(x-1, y+1), g(x, y+1)])
 
     return moves
+
+
+def fillBoard(board):
+    '''
+    Fill in the empty spaces after making matches
+    '''
+    dropSlots = gemgem.getDropSlots(board)
+    while dropSlots != [[]] * gemgem.BOARDWIDTH:
+        # do the dropping animation as long as there are more gems to drop
+        movingGems = gemgem.getDroppingGems(board)
+        for x in range(len(dropSlots)):
+            if len(dropSlots[x]) != 0:
+                # cause the lowest gem in each slot to begin moving in the DOWN direction
+                movingGems.append({'imageNum': dropSlots[x][0], 'x': x, 'y': gemgem.ROWABOVEBOARD, 'direction': gemgem.DOWN})
+
+        boardCopy = gemgem.getBoardCopyMinusGems(board, movingGems)
+        gemgem.moveGems(board, movingGems)
+
+        # Make the next row of gems from the drop slots
+        # the lowest by deleting the previous lowest gems.
+        for x in range(len(dropSlots)):
+            if len(dropSlots[x]) == 0:
+                continue
+            board[x][0] = dropSlots[x][0]
+            del dropSlots[x][0]
+    
+    return board
