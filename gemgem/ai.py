@@ -4,10 +4,11 @@ import random
 
 
 class Node:
-    def __init__(self, board, currentScore,hasRandomGems):
+    def __init__(self, board, currentScore,hasRandomGems,prob):
         self.board = board
         self.score = currentScore
         self.hasRandomGems = hasRandomGems
+        self.probability = prob # saved as exponent, cutoff at .1%
 
     def getSuccessors(self):
         '''
@@ -15,47 +16,85 @@ class Node:
         [(Node,firstSwappingGem,secondSwappingGem)]
         '''
 
-        moves = gemgem.getValidMoves(self.board)
         successors = []
-        # execute each move on a new board
-        for move in moves:
+
+        for move in getValidMoves(self.board):
             firstSwappingGem, secondSwappingGem = move
             
-            successorNode = Node(copy.deepcopy(self.board),self.score,True)
+            first = Node(copy.deepcopy(self.board),self.score,True,-99999)
+            
+            # Swap the gems in the board data structure.
+            first.board[firstSwappingGem['x']][firstSwappingGem['y']] = secondSwappingGem['imageNum']
+            first.board[secondSwappingGem['x']][secondSwappingGem['y']] = firstSwappingGem['imageNum']
 
-             # Swap the gems in the board data structure.
-            successorNode.board[firstSwappingGem['x']][firstSwappingGem['y']] = secondSwappingGem['imageNum']
-            successorNode.board[secondSwappingGem['x']][secondSwappingGem['y']] = firstSwappingGem['imageNum']
+            cur_successors = [first]
 
-            # See if this is a matching move.
-            matchedGems = gemgem.findMatchingGems(successorNode.board)
+            while cur_successors != []:
+                current = cur_successors[0]
 
-            # This was a matching move.
-            scoreAdd = 0
-            while matchedGems != []:
-                # Remove matched gems, then pull down the board.
+                # get all matching gems.
+                matchedGems = gemgem.findMatchingGems(current.board)
 
-                # where on the screen to display text to show how many
-                # points the player got. points is a list because if
-                # the playergets multiple matches, then multiple points text should appear.
-                points = []
-                for gemSet in matchedGems:
-                    scoreAdd += (10 + (len(gemSet) - 3) * 10)
-                    for gem in gemSet:
-                        successorNode.board[gem[0]][gem[1]] = gemgem.EMPTY_SPACE
-                    points.append({'points': scoreAdd,
-                                    'x': gem[0] * gemgem.GEMIMAGESIZE + gemgem.XMARGIN,
-                                    'y': gem[1] * gemgem.GEMIMAGESIZE + gemgem.YMARGIN})
-                score += scoreAdd
+                # add to successors if board is fully cascaded
+                if matchedGems != []:
+                    successors.append(current)
+                    cur_successors.remove(current)
+                    continue
 
-                # Refill the board with new gems
-                successorNode.board = gemgem.fillBoard(successorNode.board)
+                # for each matching gem add some score and remove gem
+                while matchedGems != []:
+                    # Remove matched gems, then pull down the board.
+                    for gemSet in matchedGems:
+                        current.score += (10 + (len(gemSet) - 3) * 10)
+                        for gem in gemSet:
+                            current.board[gem[0]][gem[1]] = gemgem.EMPTY_SPACE
 
-                # Check if there are any new matches.
-                matchedGems = gemgem.findMatchingGems(successorNode.board)
+                # pull down the board (make new nodes for each possible new board
+                cur_successors.extend(fillBoard(current))
 
-            successorNode.score = utilityForSuccessors(successorNode,self)
-            successors.append((successorNode,firstSwappingGem,secondSwappingGem)) 
+                # for each new board
+                    # if 
+
+        # execute each move on a new board
+        
+        # for move in moves:
+        #     firstSwappingGem, secondSwappingGem = move
+            
+        #     successorNode = Node(copy.deepcopy(self.board),self.score,True,0)
+
+        #      # Swap the gems in the board data structure.
+        #     successorNode.board[firstSwappingGem['x']][firstSwappingGem['y']] = secondSwappingGem['imageNum']
+        #     successorNode.board[secondSwappingGem['x']][secondSwappingGem['y']] = firstSwappingGem['imageNum']
+
+        #     # See if this is a matching move.
+        #     matchedGems = gemgem.findMatchingGems(successorNode.board)
+
+        #     # This was a matching move.
+        #     scoreAdd = 0
+        #     while matchedGems != []:
+        #         # Remove matched gems, then pull down the board.
+
+        #         # where on the screen to display text to show how many
+        #         # points the player got. points is a list because if
+        #         # the playergets multiple matches, then multiple points text should appear.
+        #         points = []
+        #         for gemSet in matchedGems:
+        #             scoreAdd += (10 + (len(gemSet) - 3) * 10)
+        #             for gem in gemSet:
+        #                 successorNode.board[gem[0]][gem[1]] = gemgem.EMPTY_SPACE
+        #             points.append({'points': scoreAdd,
+        #                             'x': gem[0] * gemgem.GEMIMAGESIZE + gemgem.XMARGIN,
+        #                             'y': gem[1] * gemgem.GEMIMAGESIZE + gemgem.YMARGIN})
+        #         score += scoreAdd
+
+        #         # Refill the board with new gems
+        #         successorNode.board = gemgem.fillBoard(successorNode.board)
+
+        #         # Check if there are any new matches.
+        #         matchedGems = gemgem.findMatchingGems(successorNode.board)
+
+        #     successorNode.score = utilityForSuccessors(successorNode,self)
+        #     successors.append((successorNode,firstSwappingGem,secondSwappingGem)) 
 
         return successors
 
@@ -184,11 +223,15 @@ def getValidMoves(board):
     return moves
 
 
-def fillBoard(board):
+def fillBoard(node):
     '''
-    Fill in the empty spaces after making matches
+    deterministically fill in the empty spaces after making matches
+    board -> all possible boards
     '''
-    dropSlots = gemgem.getDropSlots(board)
+    nodes = []
+    
+    board = node.board
+    dropSlots = getDropSlots(board) # THIS IS WHAT CURRENTLY DOES THE RANDOMNESS
     while dropSlots != [[]] * gemgem.BOARDWIDTH:
         # do the dropping animation as long as there are more gems to drop
         movingGems = gemgem.getDroppingGems(board)
@@ -196,7 +239,7 @@ def fillBoard(board):
             if len(dropSlots[x]) != 0:
                 # cause the lowest gem in each slot to begin moving in the DOWN direction
                 movingGems.append({'imageNum': dropSlots[x][0], 'x': x, 'y': gemgem.ROWABOVEBOARD, 'direction': gemgem.DOWN})
-
+        
         boardCopy = gemgem.getBoardCopyMinusGems(board, movingGems)
         gemgem.moveGems(board, movingGems)
 
@@ -208,4 +251,38 @@ def fillBoard(board):
             board[x][0] = dropSlots[x][0]
             del dropSlots[x][0]
     
-    return board
+    return nodes
+
+def getDropSlots(board): 
+    # Creates a "drop slot" for each column and fills the slot with a
+    # number of gems that that column is lacking. This function assumes
+    # that the gems have been gravity dropped already.
+    boardCopy = copy.deepcopy(board)
+    gemgem.pullDownAllGems(boardCopy)
+
+    dropSlots = []
+    for _ in range(gemgem.BOARDWIDTH):
+        dropSlots.append([])
+
+    # count the number of empty spaces in each column on the board
+    for x in range(gemgem.BOARDWIDTH):
+        for y in range(gemgem.BOARDHEIGHT-1, -1, -1): # start from bottom, going up
+            if boardCopy[x][y] == gemgem.EMPTY_SPACE:
+                possibleGems = list(range(len(gemgem.GEMIMAGES)))
+                for offsetX, offsetY in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+                    # Narrow down the possible gems we should put in the
+                    # blank space so we don't end up putting an two of
+                    # the same gems next to each other when they drop.
+                    neighborGem = gemgem.getGemAt(boardCopy, x + offsetX, y + offsetY)
+                    if neighborGem != None and neighborGem in possibleGems:
+                        possibleGems.remove(neighborGem)
+
+                # for each gem type (stop at a certain depth)
+                    # make new board copy
+                    # drop gem into spot
+                    # dropSlots each
+
+                newGem = random.choice(possibleGems)
+                boardCopy[x][y] = newGem
+                dropSlots[x].append(newGem)
+    return dropSlots
