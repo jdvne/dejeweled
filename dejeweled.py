@@ -2,17 +2,26 @@ import random
 import copy
 import ai
 
+USER_INPUT = False
+PRINT_BOARDS = False
+OUTPUT_TO_FILE = True
+
 WIDTH = 8
 HEIGHT = 10
-GEMS = ["△", "◆", "◙", "▩", "◎", "◓"] # ,"▢"]
+GEMS = ["△", "◆", "◙", "▩", "◎", "◓", "▢"]
+
+ORIG_BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
+ORIG_AGENTS = ["expectimax", "random"]
 
 def main():
-    # setup board with random values
-    BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
-    SCORE = 0
-    MOVES = 0
-    GEMS_CLEARED = 0
-    CASCADES = 0
+    OUTPUT_FILE = "out/{}x{}_{}gems.csv".format(WIDTH, HEIGHT, len(GEMS))
+
+    AGENTS = ORIG_AGENTS.copy()
+    AGENT = AGENTS[0]
+    AGENTS.pop(0)
+
+    BOARD = copy.deepcopy(ORIG_BOARD)
+    SCORE = MOVES = GEMS_CLEARED = CASCADES = 0
 
     # clear matches
     while get_matches(BOARD) != []:
@@ -21,28 +30,45 @@ def main():
                 BOARD[gem[1]][gem[0]] = random.choice(GEMS)
 
     # game loop
-    while(True):
-        #print("\nscore: ", SCORE)
-        #print_board(BOARD)
-        #sys.stdout.flush()
-
-        # print("enter pairs to swap: x1 y1 x2 y2")
-        # coords = [int(val) for val in input().split(" ")]
+    while True:
+        if PRINT_BOARDS:
+            print("\nscore: ", SCORE)
+            print_board(BOARD)
 
         current_node = ai.Node(BOARD, SCORE, 0)
         if not current_node.get_valid_swaps():
             print("GAME OVER")
             print_board(BOARD)
+            print("agent:          ", AGENT)
             print("final score:    ", SCORE)
             print("moves:          ", MOVES)
             print("gems cleared:   ", GEMS_CLEARED)
             print("cascades:       ", CASCADES)
-            print("avg gems/move:  ", float(GEMS_CLEARED) / float(MOVES))
-            print("avg score/move: ", float(SCORE) / float(MOVES))
-            exit()
+            gpm = float(GEMS_CLEARED) / float(MOVES)
+            print("avg gems/move:  ", gpm)
+            spm = float(SCORE) / float(MOVES)
+            print("avg score/move: ", spm)
+            
+            if OUTPUT_TO_FILE:
+                with open(OUTPUT_FILE, mode='a') as f :
+                    f.write("{},{},{},{},{},{},{}\n".format(AGENT,SCORE,MOVES,GEMS_CLEARED,CASCADES,gpm,spm))
 
+            
+            if not AGENTS:
+                exit()
+            else:
+                AGENT = AGENTS[0]
+                AGENTS.pop(0)
+                BOARD = copy.deepcopy(ORIG_BOARD)
+                SCORE = MOVES = GEMS_CLEARED = CASCADES = 0
+
+        if USER_INPUT:
+            print("enter pairs to swap: x1 y1 x2 y2")
+            coords = [int(val) for val in input().split(" ")]
+        else:
+            coords = current_node.get_next_swap(AGENT)
+        
         MOVES += 1
-        coords = current_node.get_next_swap()
 
         # make swap on prospective next board
         next_board = copy.deepcopy(BOARD)

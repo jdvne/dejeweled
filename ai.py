@@ -3,7 +3,7 @@ TODO:
     effectivity metrics
 '''
 
-import copy
+import copy, random
 import dejeweled
 from itertools import combinations_with_replacement
 
@@ -143,32 +143,46 @@ class Node:
 
         return moves
 
+    def util_value(self):
+        score = self.score / 10
+        swaps = len(self.get_valid_swaps())
+        return 0.5 * score + 0.75 * swaps
+
     def exp_value(self):
         successors = self.get_successors()
 
         # Check for terminal state
         if successors == []:
-            return self.score
+            return self.util_value()
 
         value = 0
         for succ in successors:
             p = 7 ** -succ.filled_count # switch to actual prob
-            value += p * self.score
+            value += p * self.util_value()
         return value
 
-    def get_next_swap(self):
-        choice = 0, 0, 0, 0  # default choice of move
-        best = -1e7 # lower than reasonably possible value
-        for swap in self.get_valid_swaps():
-            x1, y1, x2, y2 = swap
+    def get_next_swap(self, agent="expectimax"):
+        choice = 0, 0, 0, 0
+        valid_swaps = self.get_valid_swaps()
 
-            swapped_board = copy.deepcopy(self.board)
-            dejeweled.swap_gems(swapped_board, x1, y1, x2, y2)
-            swapped_node = Node(swapped_board, self.score, 0)
-            score = swapped_node.exp_value()
-            
-            if score > best:
-                choice = swap
-                best = score
+        if not valid_swaps:
+            return choice
+
+        if agent == "expectimax":
+            best = -1e7
+            for swap in valid_swaps:
+                x1, y1, x2, y2 = swap
+
+                swapped_board = copy.deepcopy(self.board)
+                dejeweled.swap_gems(swapped_board, x1, y1, x2, y2)
+                swapped_node = Node(swapped_board, 0, 0)
+                score = swapped_node.exp_value()
+                
+                if score > best:
+                    choice = swap
+                    best = score
+
+        elif agent == "random":
+            choice = random.sample(valid_swaps,1)[0]
 
         return choice
