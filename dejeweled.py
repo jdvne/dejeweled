@@ -1,13 +1,18 @@
-import random, copy
+import random
+import copy
+import ai
 
 WIDTH = 8
-HEIGHT = 8
-GEMS = ['!', '@', '#', '$', '%', '&', '*']
+HEIGHT = 10
+GEMS = ["△", "◆", "◙", "▩", "◎", "◓"] # ,"▢"]
 
 def main():
     # setup board with random values
     BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
     SCORE = 0
+    MOVES = 0
+    GEMS_CLEARED = 0
+    CASCADES = 0
 
     # clear matches
     while get_matches(BOARD) != []:
@@ -17,11 +22,27 @@ def main():
 
     # game loop
     while(True):
-        print("\nscore: ", SCORE)
-        print_board(BOARD)
+        #print("\nscore: ", SCORE)
+        #print_board(BOARD)
+        #sys.stdout.flush()
 
-        print("enter pairs to swap: x1 y1 x2 y2")
-        coords = [int(val) for val in input().split(" ")]
+        # print("enter pairs to swap: x1 y1 x2 y2")
+        # coords = [int(val) for val in input().split(" ")]
+
+        current_node = ai.Node(BOARD, SCORE, 0)
+        if not current_node.get_valid_swaps():
+            print("GAME OVER")
+            print_board(BOARD)
+            print("final score:    ", SCORE)
+            print("moves:          ", MOVES)
+            print("gems cleared:   ", GEMS_CLEARED)
+            print("cascades:       ", CASCADES)
+            print("avg gems/move:  ", float(GEMS_CLEARED) / float(MOVES))
+            print("avg score/move: ", float(SCORE) / float(MOVES))
+            exit()
+
+        MOVES += 1
+        coords = current_node.get_next_swap()
 
         # make swap on prospective next board
         next_board = copy.deepcopy(BOARD)
@@ -32,18 +53,27 @@ def main():
         if matches == []: continue
         BOARD = next_board
 
-        # clear matches and increment score
+        # track if we are cascading
+        settled_once = False
+        # clear matches and increment score until settled
         while get_matches(BOARD) != []:
+            if settled_once: CASCADES += 1
             for match in get_matches(BOARD):
                 for gem in match:
                     SCORE += (10 + (len(match) - 3) * 10)
                     BOARD[gem[1]][gem[0]] = " "
+                    GEMS_CLEARED += 1
 
+            settled_once = True
             drop_and_fill(BOARD)
 
 def get_gem(board, x, y):
+    '''
+    get gem on board at specified (x, y)
+    ensures x and y are within bounds of board
+    '''
     if not (0 <= x < WIDTH and 0 <= y < HEIGHT): return " "
-    else return board[y][x]
+    else: return board[y][x]
 
 def swap_gems(board,x1,y1,x2,y2):
     '''
@@ -64,24 +94,24 @@ def get_matches(board):
     for x in range(WIDTH):
         for y in range(HEIGHT):
             # look for horizontal matches
-            if x+2 < WIDTH and board_copy[y][x] == board_copy[y][x+1] == board_copy[y][x+2] != " ":
+            if board_copy[y][x] == get_gem(board_copy,x+1,y) == get_gem(board_copy,x+2,y) != " ":
                 target = board_copy[y][x]
                 offset = 0
                 gems = []
-                while x+offset < WIDTH and board_copy[y][x+offset] == target:
+                while get_gem(board_copy,x+offset,y) == target:
                     gems.append((x+offset, y))
-                    board_copy[x+offset][y] = " "
+                    board_copy[y][x+offset] = " "
                     offset += 1
                 groups_to_remove.append(gems)
 
             # look for vertical matches
-            if y+2 < HEIGHT and board_copy[y][x] == board_copy[y+1][x] == board_copy[y+2][x] != " ":
+            if board_copy[y][x] == get_gem(board_copy,x,y+1) == get_gem(board_copy,x,y+2) != " ":
                 target = board_copy[y][x]
                 offset = 0
                 gems = []
-                while y+offset < HEIGHT and board_copy[y+offset][x] == target:
+                while get_gem(board_copy,x,y+offset) == target:
                     gems.append((x,y+offset))
-                    board_copy[x][y+offset] = " "
+                    board_copy[y+offset][x] = " "
                     offset += 1
                 groups_to_remove.append(gems)
 
@@ -103,10 +133,10 @@ def drop_and_fill(board):
     
 def print_board(board):
     for col in board:
-        print("|", end="")
+        print("║ ", end="")
         for row in col:
-            print(" ", row, " ", end="")
-        print("|")
+            print(row, " ", end="")
+        print("║")
 
 if __name__ == "__main__":
     main()
