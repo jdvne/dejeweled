@@ -1,6 +1,6 @@
 '''
 TODO:
-    effectivity metrics
+    time per moves
 '''
 
 import copy, random
@@ -157,7 +157,7 @@ class Node:
 
         value = 0
         for succ in successors:
-            p = 7 ** -succ.filled_count # switch to actual prob
+            p = len(dejeweled.GEMS) ** -succ.filled_count # switch to actual prob
             value += p * self.util_value()
         return value
 

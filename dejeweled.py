@@ -3,12 +3,12 @@ import copy
 import ai
 
 USER_INPUT = False
-PRINT_BOARDS = False
+PRINT_BOARDS = True
 OUTPUT_TO_FILE = True
 
 WIDTH = 8
 HEIGHT = 10
-GEMS = ["△", "◆", "◙", "▩", "◎", "◓", "▢"]
+GEMS = ["△", "◆", "◙", "▩", "◎", "◓"] #"▢"]
 
 ORIG_BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
 ORIG_AGENTS = ["expectimax", "random"]
