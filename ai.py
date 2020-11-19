@@ -1,11 +1,7 @@
-'''
-TODO:
-    time per moves
-'''
-
 import copy, random
-import dejeweled
 from itertools import combinations_with_replacement
+import dejeweled
+
 
 # essentially the max filling depth for our nodes
 FILLED_LIMIT = 7
@@ -39,7 +35,7 @@ class Node:
                         next_node.board[gem[1]][gem[0]] = " "
 
             # drop gems
-            apply_gravity(next_node.board)
+            dejeweled.apply_gravity(next_node.board)
 
             # create and fill new nodes
             for combo in combinations_with_replacement(dejeweled.GEMS, number_of_spaces):
@@ -58,94 +54,10 @@ class Node:
                 next_successors.append(new_node)
             
         return successors
-    
-
-    def get_valid_swaps(self):
-        '''
-        Return a list of pairs to swap
-        '''
-
-        # Moves is positions to swap
-        moves = set()
-
-        # X represents a gem of a specific type
-        for x in range(dejeweled.WIDTH):
-            for y in range(dejeweled.HEIGHT):
-                current_gem = self.board[y][x]
-                if(current_gem == dejeweled.get_gem(self.board, x+1, y) != " "):
-                    # Case  _ X x _
-                    # check left up
-                    if(current_gem == dejeweled.get_gem(self.board, x-1, y-1)):
-                        moves.add((x-1, y-1, x-1, y))
-                    # check left down
-                    if(current_gem == dejeweled.get_gem(self.board, x-1, y+1)):
-                        moves.add((x-1, y, x-1, y+1))
-                    # check left left
-                    if(current_gem == dejeweled.get_gem(self.board, x-2, y)):
-                        moves.add((x-2, y, x-1, y))
-                    # check right up
-                    if(current_gem == dejeweled.get_gem(self.board, x+2, y-1)):
-                        moves.add((x+2, y-1, x+2, y))
-                    # check right down
-                    if(current_gem == dejeweled.get_gem(self.board, x+2, y+1)):
-                        moves.add((x+2, y, x+2, y+1))
-                    # check right right
-                    if(current_gem == dejeweled.get_gem(self.board, x+3, y)):
-                        moves.add((x+2, y, x+3, y))
-
-                elif(current_gem == dejeweled.get_gem(self.board, x+2, y) != " "):
-                    # Case X _ x
-                    # check down
-                    if(current_gem == dejeweled.get_gem(self.board, x+1, y+1)):
-                        moves.add((x+1, y, x+1, y+1))
-                    # check up
-                    if(current_gem == dejeweled.get_gem(self.board, x+1, y-1)):
-                        moves.add((x+1, y, x+1, y-1))
-
-                if(current_gem == dejeweled.get_gem(self.board, x, y+1) != " "):
-                    # Case _
-                    #      X
-                    #      x
-                    #      _
-                    # Check up right
-                    if(current_gem == dejeweled.get_gem(self.board, x+1, y-1)):
-                        moves.add((x, y-1, x+1, y-1))
-
-                    # Check up left
-                    if(current_gem == dejeweled.get_gem(self.board, x-1, y-1)):
-                        moves.add((x, y-1, x-1, y-1))
-
-                    # Check up up
-                    if(current_gem == dejeweled.get_gem(self.board, x, y-2)):
-                        moves.add((x, y-2, x, y-1))
-
-                    # Check down left
-                    if(current_gem == dejeweled.get_gem(self.board, x-1, y+2)):
-                        moves.add((x-1, y+2, x, y+2))
-
-                    # Check down right
-                    if(current_gem == dejeweled.get_gem(self.board, x+1, y+2)):
-                        moves.add((x, y+2, x+1, y+2))
-
-                    # Check down down
-                    if(current_gem == dejeweled.get_gem(self.board, x, y+3)):
-                        moves.add((x, y+2, x, y+3))
-
-                elif(current_gem == dejeweled.get_gem(self.board, x, y+2) != " "):
-                    # Case X
-                    #      _
-                    #      x
-                    # check left right
-                    if(current_gem == dejeweled.get_gem(self.board, x+1, y+1)):
-                        moves.add((x, y+1, x+1, y+1))
-                    if(current_gem == dejeweled.get_gem(self.board, x-1, y+1)):
-                        moves.add((x-1, y+1, x, y+1))
-
-        return moves
 
     def util_value(self):
         score = self.score / 10
-        swaps = len(self.get_valid_swaps())
+        swaps = len(dejeweled.get_valid_swaps(self.board))
         return 0.5 * score + 0.75 * swaps
 
     def exp_value(self):
@@ -163,7 +75,7 @@ class Node:
 
     def get_next_swap(self, agent="expectimax"):
         choice = 0, 0, 0, 0
-        valid_swaps = self.get_valid_swaps()
+        valid_swaps = dejeweled.get_valid_swaps(self.board)
 
         if not valid_swaps:
             return choice

@@ -8,9 +8,8 @@ OUTPUT_TO_FILE = True
 
 WIDTH = 8
 HEIGHT = 10
-GEMS = ["△", "◆", "◙", "▩", "◎", "◓"] #"▢"]
+GEMS = ["△", "◆", "◙", "▩", "◎", "◓", "▢"]
 
-ORIG_BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
 ORIG_AGENTS = ["expectimax", "random"]
 
 def main():
@@ -20,7 +19,7 @@ def main():
     AGENT = AGENTS[0]
     AGENTS.pop(0)
 
-    BOARD = copy.deepcopy(ORIG_BOARD)
+    BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
     SCORE = MOVES = GEMS_CLEARED = CASCADES = 0
 
     # clear matches
@@ -35,8 +34,7 @@ def main():
             print("\nscore: ", SCORE)
             print_board(BOARD)
 
-        current_node = ai.Node(BOARD, SCORE, 0)
-        if not current_node.get_valid_swaps():
+        if not get_valid_swaps(BOARD):
             print("GAME OVER")
             print_board(BOARD)
             print("agent:          ", AGENT)
@@ -59,13 +57,14 @@ def main():
             else:
                 AGENT = AGENTS[0]
                 AGENTS.pop(0)
-                BOARD = copy.deepcopy(ORIG_BOARD)
+                BOARD = [[random.choice(GEMS) for c in range(WIDTH)] for r in range(HEIGHT)]
                 SCORE = MOVES = GEMS_CLEARED = CASCADES = 0
 
         if USER_INPUT:
             print("enter pairs to swap: x1 y1 x2 y2")
             coords = [int(val) for val in input().split(" ")]
         else:
+            current_node = ai.Node(BOARD, SCORE, 0)
             coords = current_node.get_next_swap(AGENT)
         
         MOVES += 1
@@ -142,6 +141,87 @@ def get_matches(board):
                 groups_to_remove.append(gems)
 
     return groups_to_remove
+
+def get_valid_swaps(board):
+    '''
+    Return a list of pairs to swap
+    '''
+    swaps = set()
+
+    # X represents a gem of a specific type
+    for x in range(WIDTH):
+        for y in range(HEIGHT):
+            current_gem = board[y][x]
+            if(current_gem == get_gem(board, x+1, y) != " "):
+                # Case  _ X x _
+                # check left up
+                if(current_gem == get_gem(board, x-1, y-1)):
+                    swaps.add((x-1, y-1, x-1, y))
+                # check left down
+                if(current_gem == get_gem(board, x-1, y+1)):
+                    swaps.add((x-1, y, x-1, y+1))
+                # check left left
+                if(current_gem == get_gem(board, x-2, y)):
+                    swaps.add((x-2, y, x-1, y))
+                # check right up
+                if(current_gem == get_gem(board, x+2, y-1)):
+                    swaps.add((x+2, y-1, x+2, y))
+                # check right down
+                if(current_gem == get_gem(board, x+2, y+1)):
+                    swaps.add((x+2, y, x+2, y+1))
+                # check right right
+                if(current_gem == get_gem(board, x+3, y)):
+                    swaps.add((x+2, y, x+3, y))
+
+            elif(current_gem == get_gem(board, x+2, y) != " "):
+                # Case X _ x
+                # check down
+                if(current_gem == get_gem(board, x+1, y+1)):
+                    swaps.add((x+1, y, x+1, y+1))
+                # check up
+                if(current_gem == get_gem(board, x+1, y-1)):
+                    swaps.add((x+1, y, x+1, y-1))
+
+            if(current_gem == get_gem(board, x, y+1) != " "):
+                # Case _
+                #      X
+                #      x
+                #      _
+                # Check up right
+                if(current_gem == get_gem(board, x+1, y-1)):
+                    swaps.add((x, y-1, x+1, y-1))
+
+                # Check up left
+                if(current_gem == get_gem(board, x-1, y-1)):
+                    swaps.add((x, y-1, x-1, y-1))
+
+                # Check up up
+                if(current_gem == get_gem(board, x, y-2)):
+                    swaps.add((x, y-2, x, y-1))
+
+                # Check down left
+                if(current_gem == get_gem(board, x-1, y+2)):
+                    swaps.add((x-1, y+2, x, y+2))
+
+                # Check down right
+                if(current_gem == get_gem(board, x+1, y+2)):
+                    swaps.add((x, y+2, x+1, y+2))
+
+                # Check down down
+                if(current_gem == get_gem(board, x, y+3)):
+                    swaps.add((x, y+2, x, y+3))
+
+            elif(current_gem == get_gem(board, x, y+2) != " "):
+                # Case X
+                #      _
+                #      x
+                # check left right
+                if(current_gem == get_gem(board, x+1, y+1)):
+                    swaps.add((x, y+1, x+1, y+1))
+                if(current_gem == get_gem(board, x-1, y+1)):
+                    swaps.add((x-1, y+1, x, y+1))
+
+    return swaps
 
 def apply_gravity(board):
     for x in range(WIDTH):
