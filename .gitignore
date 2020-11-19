@@ -1,2 +1,5 @@
+# python cache
+__pycache__
+
 # output csvs
 out/
