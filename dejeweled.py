@@ -1,6 +1,7 @@
 import random
 import copy
 import ai
+import time
 
 USER_INPUT = False
 PRINT_BOARDS = True
